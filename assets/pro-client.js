@@ -30,7 +30,7 @@
   // `resolved` flips true only once /me has actually ANSWERED (2xx JSON) —
   // pages must not present a definitive "signed out" UI before that, or a
   // transient fetch failure paints a signed-in user as logged out.
-  var state = { authenticated: false, email: null, pro: false, lifetime: false, billing: false, subscription: null, ppp: null, resolved: false };
+  var state = { authenticated: false, email: null, name: null, pro: false, lifetime: false, billing: false, subscription: null, ppp: null, resolved: false };
 
   // Last-known auth state, cached so a navigation can paint the signed-in UI
   // on the FIRST frame instead of flashing the signed-out version for the
@@ -155,6 +155,7 @@
       .then(function (me) {
         state.authenticated = !!me.authenticated;
         state.email = me.email || null;
+        state.name = me.name || null;
         state.pro = !!(me.entitlements && me.entitlements.pro);
         state.lifetime = !!me.lifetime;
         state.subscription = me.subscription || null;
@@ -252,6 +253,7 @@
     state.authenticated = false;
     state.pro = false;
     state.email = null;
+    state.name = null;
     state.lifetime = false;
     state.billing = false;
     state.subscription = null;

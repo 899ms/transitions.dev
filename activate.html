@@ -10,7 +10,7 @@
     Entry points:
       • Plain sign-in:    /activate.html
       • Checkout return:  /activate.html?checkout=success&session_id=...
-      • Device activate:  /activate.html?code=WXYZ-WXYZ   (from `npx transitions-pro skill` / `add --pro`)
+      • Device activate:  /activate.html?code=WXYZ-WXYZ   (from `npx transitions-dev skill` / `add --pro`)
     Redirect states from the API's magic-link callback:
       ?signed_in=1 · ?device=approved · ?device=denied · ?error=link_invalid
   -->
@@ -443,7 +443,7 @@
     </footer>
   </main>
 
-  <script src="assets/pro-client.js?v=35" defer></script>
+  <script src="assets/pro-client.js?v=36" defer></script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       var TP = window.TransitionsPro;
