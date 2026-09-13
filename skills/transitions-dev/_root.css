@@ -167,6 +167,8 @@
   --tt-delay: 80ms;
   --tt-in-ease: ease-out;
   --tt-out-ease: ease-out;
+  --tt-move-dur: 160ms;
+  --tt-move-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --tt-bg: #ffffff;
   --tt-fg: #2f2f2f;
   /* Texts reveal */

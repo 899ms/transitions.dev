@@ -2,7 +2,7 @@
 
 ## When to use
 
-Sonner-style banner / toast stacking. Each new banner rises in with the **toast** motion (rise + cross-blur + slight scale) while older banners push back — smaller, higher, dimmer, softer — instead of leaving; the fourth arrival sends the oldest out. Hovering the stack fans it into a readable list.
+Sonner-style banner / toast stacking. Each new banner rises in with the **toast** motion (rise + cross-blur + slight scale) while older banners push back — smaller, higher, dimmer — instead of leaving; the fourth arrival sends the oldest out. Hovering the stack fans it into a readable list.
 
 Use over a single **toast** when notifications can overlap: the stack keeps the newest legible while acknowledging the queue behind it.
 

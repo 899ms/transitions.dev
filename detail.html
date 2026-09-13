@@ -459,6 +459,11 @@
       --p17-delay:           var(--duration-micro);
       --p17-in-ease:         var(--ease-out);
       --p17-out-ease:        var(--ease-out);
+      /* One bubble is shared by the whole trigger group. When it is
+         already showing, a new target tweens its x + width on the move
+         clock, so it travels between triggers rather than popping. */
+      --p17-move-dur:        160ms;
+      --p17-move-ease:       cubic-bezier(0.22, 1, 0.36, 1);
       --p17-bg:              #ffffff;
       --p17-fg:              #2f2f2f;
 
@@ -3668,15 +3673,19 @@
     .p17-stage-inner {
       padding-top: 56px;
     }
-    .p17-wrap {
+    /* One tooltip per group. It stays mounted and retargets by tweening
+       its x-position and width across the triggers, so moving along the
+       row reads as one bubble travelling rather than three popping. */
+    .p17-group {
       position: relative;
-      display: inline-block;
+      display: inline-flex;
+      gap: 8px;
     }
     /* Trigger styling mirrors `.btn-animate` so every interactive
        affordance on a card reads as the same pill control: same
        height, padding, radius, type scale, and theme-aware bg
        tokens. Positioning stays inline (no absolute / bottom)
-       because the tooltip anchors off this element via `.p17-wrap`. */
+       because the tooltip anchors off the surrounding `.p17-group`. */
     .p17-trigger {
       appearance: none;
       -webkit-appearance: none;
@@ -3726,8 +3735,17 @@
     .p17-tooltip {
       position: absolute;
       bottom: calc(100% + 8px);
-      left: 50%;
-      transform: translate(-50%, 0) scale(var(--p17-scale-from));
+      left: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 0;                 /* initP17 writes the measured width */
+      overflow: hidden;
+      /* Individual transform properties: the travel (translate) and the
+         appear (scale) run on their own clocks without sharing one
+         transform. */
+      translate: var(--p17-x, 0px) 0;
+      scale: var(--p17-scale-from);
       transform-origin: 50% 100%;
       padding: 8px 10px;
       border-radius: 10px;
@@ -3746,21 +3764,28 @@
       pointer-events: none;
       transition:
         opacity   var(--p17-out-dur) var(--p17-out-ease),
-        transform var(--p17-out-dur) var(--p17-out-ease);
+        scale     var(--p17-out-dur) var(--p17-out-ease),
+        translate var(--p17-move-dur) var(--p17-move-ease),
+        width     var(--p17-move-dur) var(--p17-move-ease);
     }
+    .p17-tooltip-text { white-space: nowrap; }
     html[data-theme="dark"] .p17-tooltip {
       box-shadow:
         inset 0 0 0 1px rgba(255, 255, 255, 0.03),
         0 1px 1px 0 rgba(0, 0, 0, 0.08),
         0 2px 6px 0 rgba(0, 0, 0, 0.15);
     }
-    .p17-wrap:hover .p17-tooltip,
-    .p17-trigger:focus-visible + .p17-tooltip {
+    /* The appear delay belongs ONLY to the show rule, so hiding snaps it
+       back to 0. The move lanes carry no delay, so a retarget while
+       showing starts at once. */
+    .p17-tooltip[data-show="true"] {
       opacity: 1;
-      transform: translate(-50%, 0) scale(1);
-      transition-duration: var(--p17-in-dur);
-      transition-timing-function: var(--p17-in-ease);
-      transition-delay: var(--p17-delay);
+      scale: 1;
+      transition:
+        opacity   var(--p17-in-dur) var(--p17-in-ease) var(--p17-delay),
+        scale     var(--p17-in-dur) var(--p17-in-ease) var(--p17-delay),
+        translate var(--p17-move-dur) var(--p17-move-ease),
+        width     var(--p17-move-dur) var(--p17-move-ease);
     }
 
     /* ─── Prototype 18 — Primary + secondary text appear ───────
@@ -7527,15 +7552,17 @@
       <article class="card" data-proto-card>
         <div class="card-stage">
           <div class="stage-inner p17-stage-inner">
-            <span class="p17-wrap">
-              <button type="button" class="p17-trigger" aria-describedby="p17-tooltip-text">Hover me</button>
-              <span class="p17-tooltip" id="p17-tooltip-text" role="tooltip">Tooltip text</span>
+            <span class="p17-group" data-proto-tooltip>
+              <button type="button" class="p17-trigger" data-tooltip="Copy link" aria-describedby="p17-tooltip-text">Copy</button>
+              <button type="button" class="p17-trigger" data-tooltip="Share with team" aria-describedby="p17-tooltip-text">Share</button>
+              <button type="button" class="p17-trigger" data-tooltip="More options" aria-describedby="p17-tooltip-text">More</button>
+              <span class="p17-tooltip" id="p17-tooltip-text" role="tooltip" aria-hidden="true" data-show="false"><span class="p17-tooltip-text"></span></span>
             </span>
           </div>
         </div>
         <div class="card-meta">
           <div class="card-title">Tooltip open/close</div>
-          <div class="card-subtitle">Appear-only delay, instant exit</div>
+          <div class="card-subtitle">Delayed in, travels, instant out</div>
         </div>
         <button type="button" class="card-copy" aria-label="Copy Tooltip open/close CSS" data-copy-key="p17">
           <svg class="icon-copy" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -9070,16 +9097,77 @@ export function SlidingTabs({ tabs }) {
 </script>
 
   <script type="text/plain" data-react-key="p17">// Pair with the CSS from the CSS tab.
-// Pure CSS — hover / focus state lives entirely in selectors.
-// Bring your own trigger styling.
-export function Tooltip({ id, content, children }) {
+// One tooltip per group, shared by every trigger. Hovering a trigger
+// writes the bubble's x + width: when it is already showing the move
+// tweens (it travels); when hidden the geometry snaps and only the
+// appear plays. Bring your own trigger styling.
+import { useRef } from "react";
+
+export function TooltipGroup({ id, items }) {
+  // items: [{ label: "Copy", tooltip: "Copy link", onClick }]
+  const group = useRef(null);
+  const tip = useRef(null);
+  const text = useRef(null);
+
+  const hide = () => {
+    tip.current.setAttribute("data-show", "false");
+    tip.current.setAttribute("aria-hidden", "true");
+  };
+
+  const place = (trigger, label) => {
+    const t = tip.current;
+    const showing = t.getAttribute("data-show") === "true";
+    text.current.textContent = label;
+    const cs = getComputedStyle(t);
+    const width = Math.ceil(
+      text.current.scrollWidth +
+        parseFloat(cs.paddingLeft) +
+        parseFloat(cs.paddingRight)
+    );
+    const g = group.current.getBoundingClientRect();
+    const r = trigger.getBoundingClientRect();
+    const x = r.left - g.left + r.width / 2 - width / 2;
+    if (!showing) {
+      // Snap the geometry while hidden so only the appear plays.
+      t.style.transition = "none";
+      t.style.width = `${width}px`;
+      t.style.setProperty("--tt-x", `${x}px`);
+      void t.offsetWidth;
+      t.style.transition = "";
+    } else {
+      t.style.width = `${width}px`;
+      t.style.setProperty("--tt-x", `${x}px`);
+    }
+    t.setAttribute("data-show", "true");
+    t.setAttribute("aria-hidden", "false");
+  };
+
   return (
-    <span className="t-tt-wrap">
-      {/* The trigger needs `aria-describedby` pointed at the
-          tooltip's id; CSS uses :focus-visible + sibling selector
-          so the tooltip also shows on keyboard focus. */}
-      {children({ "aria-describedby": id, className: "t-tt-trigger" })}
-      <span id={id} className="t-tt" role="tooltip">{content}</span>
+    <span ref={group} className="t-tt-group" onPointerLeave={hide}>
+      {items.map((item) => (
+        <button
+          key={item.label}
+          type="button"
+          className="t-tt-trigger"
+          aria-describedby={id}
+          onPointerEnter={(e) => place(e.currentTarget, item.tooltip)}
+          onFocus={(e) => place(e.currentTarget, item.tooltip)}
+          onBlur={hide}
+          onClick={item.onClick}
+        >
+          {item.label}
+        </button>
+      ))}
+      <span
+        ref={tip}
+        id={id}
+        className="t-tt"
+        role="tooltip"
+        aria-hidden="true"
+        data-show="false"
+      >
+        <span ref={text} className="t-tt-text" />
+      </span>
     </span>
   );
 }
@@ -11195,17 +11283,21 @@ export function Surface({ open, children }) {
         p17: {
           name: "Tooltip open/close",
           usage:
-            "    <span class=\"t-tt-wrap\">\n" +
-            "      <button class=\"t-tt-trigger\" aria-describedby=\"tt-1\">…</button>\n" +
-            "      <span class=\"t-tt\" id=\"tt-1\" role=\"tooltip\">Tooltip text</span>\n" +
+            "    <span class=\"t-tt-group\">\n" +
+            "      <button class=\"t-tt-trigger\" data-tooltip=\"Copy link\" aria-describedby=\"tt-1\">…</button>\n" +
+            "      <button class=\"t-tt-trigger\" data-tooltip=\"Share\" aria-describedby=\"tt-1\">…</button>\n" +
+            "      <span class=\"t-tt\" id=\"tt-1\" role=\"tooltip\" aria-hidden=\"true\" data-show=\"false\">\n" +
+            "        <span class=\"t-tt-text\"></span>\n" +
+            "      </span>\n" +
             "    </span>\n" +
             "\n" +
-            "  Pure CSS — no JS. The wrap (not the trigger) is the hover\n" +
-            "  target so the pointer can drift onto the tooltip without\n" +
-            "  flicker. transition-delay only applies in the hover/focus\n" +
-            "  rule, so leaving snaps it to 0 and the disappear plays\n" +
-            "  immediately. Trigger styling is yours; only the tooltip\n" +
-            "  positioning + its transition live here.",
+            "  One tooltip per group, shared by every trigger. The JS snippet\n" +
+            "  writes the bubble's x + width for the hovered trigger: when it is\n" +
+            "  already showing, the move tweens on --tt-move-dur so the bubble\n" +
+            "  travels between triggers; when hidden, the geometry snaps and only\n" +
+            "  the appear plays. The appear delay belongs to the show rule alone,\n" +
+            "  so leaving the group hides it immediately. Trigger styling is\n" +
+            "  yours; only the tooltip and its motion live here.",
           vars: [
             ["--tt-in-dur",    "--p17-in-dur"],
             ["--tt-out-dur",   "--p17-out-dur"],
@@ -11213,19 +11305,30 @@ export function Surface({ open, children }) {
             ["--tt-delay",     "--p17-delay"],
             ["--tt-in-ease",   "--p17-in-ease"],
             ["--tt-out-ease",  "--p17-out-ease"],
+            ["--tt-move-dur",  "--p17-move-dur"],
+            ["--tt-move-ease", "--p17-move-ease"],
             ["--tt-bg",        "--p17-bg"],
             ["--tt-fg",        "--p17-fg"]
           ],
           css:
-            ".t-tt-wrap {\n" +
+            ".t-tt-group {\n" +
             "  position: relative;\n" +
-            "  display: inline-block;\n" +
+            "  display: inline-flex;\n" +
             "}\n" +
             ".t-tt {\n" +
             "  position: absolute;\n" +
             "  bottom: calc(100% + 8px);\n" +
-            "  left: 50%;\n" +
-            "  transform: translate(-50%, 0) scale(var(--tt-scale));\n" +
+            "  left: 0;\n" +
+            "  box-sizing: border-box;\n" +
+            "  display: inline-flex;\n" +
+            "  align-items: center;\n" +
+            "  justify-content: center;\n" +
+            "  width: 0;                 /* the JS writes the measured width */\n" +
+            "  overflow: hidden;\n" +
+            "  /* Individual transform properties: the travel (translate) and the\n" +
+            "     appear (scale) run on their own clocks. */\n" +
+            "  translate: var(--tt-x, 0px) 0;\n" +
+            "  scale: var(--tt-scale);\n" +
             "  transform-origin: 50% 100%;\n" +
             "  padding: 8px 12px;\n" +
             "  border-radius: 8px;\n" +
@@ -11238,23 +11341,26 @@ export function Surface({ open, children }) {
             "    0 4px 42px 0 rgba(0, 0, 0, 0.06);\n" +
             "  opacity: 0;\n" +
             "  pointer-events: none;\n" +
-            "  /* Default rule controls the LEAVE state. transition-delay\n" +
-            "     stays unset so leaving plays without delay. */\n" +
+            "  /* Default rule controls the LEAVE state: no delay, so hiding plays\n" +
+            "     immediately. The move lanes are always live. */\n" +
             "  transition:\n" +
             "    opacity   var(--tt-out-dur) var(--tt-out-ease),\n" +
-            "    transform var(--tt-out-dur) var(--tt-out-ease);\n" +
+            "    scale     var(--tt-out-dur) var(--tt-out-ease),\n" +
+            "    translate var(--tt-move-dur) var(--tt-move-ease),\n" +
+            "    width     var(--tt-move-dur) var(--tt-move-ease);\n" +
             "}\n" +
-            "/* The 50ms delay belongs ONLY to the hover rule so leaving\n" +
-            "   the trigger snaps the delay back to 0 and the disappear\n" +
-            "   plays immediately. */\n" +
-            ".t-tt-wrap:hover .t-tt,\n" +
-            ".t-tt-trigger:focus-visible + .t-tt {\n" +
+            "/* The appear delay belongs ONLY to the show rule, so hiding snaps it\n" +
+            "   back to 0. A retarget while showing carries no delay at all. */\n" +
+            ".t-tt[data-show=\"true\"] {\n" +
             "  opacity: 1;\n" +
-            "  transform: translate(-50%, 0) scale(1);\n" +
-            "  transition-duration: var(--tt-in-dur);\n" +
-            "  transition-timing-function: var(--tt-in-ease);\n" +
-            "  transition-delay: var(--tt-delay);\n" +
+            "  scale: 1;\n" +
+            "  transition:\n" +
+            "    opacity   var(--tt-in-dur) var(--tt-in-ease) var(--tt-delay),\n" +
+            "    scale     var(--tt-in-dur) var(--tt-in-ease) var(--tt-delay),\n" +
+            "    translate var(--tt-move-dur) var(--tt-move-ease),\n" +
+            "    width     var(--tt-move-dur) var(--tt-move-ease);\n" +
             "}\n" +
+            ".t-tt-text { white-space: nowrap; }\n" +
             "\n" +
             "@media (prefers-reduced-motion: reduce) {\n" +
             "  .t-tt { transition: none !important; }\n" +
@@ -13651,6 +13757,56 @@ export function Surface({ open, children }) {
             el.addEventListener("mouseenter", function () { setShifts(i, "in"); });
           });
           root.addEventListener("mouseleave", function () { setShifts(null, "out"); });
+        });
+      })();
+
+      /* Prototype 17: one tooltip per group. Hovering a trigger writes
+         the bubble's x + width for that trigger. When it is already
+         showing the move tweens so it travels; when hidden the geometry
+         snaps under it and only the appear plays. Leaving the group
+         hides it with no delay. */
+      (function initP17() {
+        var groups = document.querySelectorAll("[data-proto-tooltip]");
+        if (!groups.length) return;
+        groups.forEach(function (group) {
+          var tip = group.querySelector(".p17-tooltip");
+          var text = group.querySelector(".p17-tooltip-text");
+          var triggers = Array.prototype.slice.call(group.querySelectorAll(".p17-trigger"));
+          if (!tip || !text || !triggers.length) return;
+          function hide() {
+            tip.setAttribute("data-show", "false");
+            tip.setAttribute("aria-hidden", "true");
+          }
+          function place(trigger) {
+            var showing = tip.getAttribute("data-show") === "true";
+            text.textContent = trigger.getAttribute("data-tooltip") || "";
+            var cs = getComputedStyle(tip);
+            var width = Math.ceil(
+              text.scrollWidth + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
+            );
+            var g = group.getBoundingClientRect();
+            var r = trigger.getBoundingClientRect();
+            var x = (r.left - g.left) + r.width / 2 - width / 2;
+            if (!showing) {
+              // Snap the geometry while hidden so only the appear plays.
+              tip.style.transition = "none";
+              tip.style.width = width + "px";
+              tip.style.setProperty("--p17-x", x + "px");
+              void tip.offsetWidth;
+              tip.style.transition = "";
+            } else {
+              tip.style.width = width + "px";
+              tip.style.setProperty("--p17-x", x + "px");
+            }
+            tip.setAttribute("data-show", "true");
+            tip.setAttribute("aria-hidden", "false");
+          }
+          triggers.forEach(function (t) {
+            t.addEventListener("pointerenter", function () { place(t); });
+            t.addEventListener("focus", function () { place(t); });
+            t.addEventListener("blur", hide);
+          });
+          group.addEventListener("pointerleave", hide);
         });
       })();
 
