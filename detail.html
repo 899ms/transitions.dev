@@ -650,13 +650,16 @@
          smaller, higher, dimmer — instead of moving away. Max 3
          visible; the oldest fades out when a fourth arrives. Depth
          steps: −--p34-peek px, ×(1 − depth·scale), opacity
-         −depth·fade. */
+         −depth·fade, plus a per-depth blur so the queue reads as
+         receding rather than merely dimmed. */
       --p34-open-dur:        350ms;
       --p34-close-dur:       250ms;
-      --p34-distance:        80px;
+      --p34-distance:        60px;
       --p34-blur:            var(--blur-small);
       --p34-scale-in:        0.97;
       --p34-peek:            12px;
+      --p34-depth1-blur:     1px;   /* second banner in the stack */
+      --p34-depth2-blur:     2px;   /* third */
       /* Hovering the stack fans the banners into a list: each one
          climbs its own height plus --p34-spread-gap and drops the
          depth scale and fade. */
@@ -4859,6 +4862,7 @@
       transform: translateY(calc(var(--p34-peek) * -1))
                  scale(calc(1 - var(--p34-depth-scale)));
       opacity: calc(1 - var(--p34-depth-fade));
+      filter: blur(var(--p34-depth1-blur));
     }
     .p34-banner[data-depth="2"] {
       z-index: 1;
@@ -4866,6 +4870,7 @@
       transform: translateY(calc(var(--p34-peek) * -2))
                  scale(calc(1 - var(--p34-depth-scale) * 2));
       opacity: calc(1 - var(--p34-depth-fade) * 1.6);
+      filter: blur(var(--p34-depth2-blur));
     }
     /* Spread: the stack reads as a list. Newest stays put and the
        older ones climb by one banner height each. Driven by a class,
@@ -4875,6 +4880,7 @@
     .p34-stack.is-spread .p34-banner[data-depth="1"],
     .p34-stack.is-spread .p34-banner[data-depth="2"] {
       opacity: 1;
+      filter: blur(0);
     }
     .p34-stack.is-spread .p34-banner[data-depth="1"] {
       transform: translateY(calc((46px + var(--p34-spread-gap)) * -1)) scale(1);
@@ -12099,6 +12105,8 @@ export function Surface({ open, children }) {
             ["--stack-spread-gap",  "--p34-spread-gap"],
             ["--stack-depth-scale", "--p34-depth-scale"],
             ["--stack-depth-fade",  "--p34-depth-fade"],
+            ["--stack-depth1-blur", "--p34-depth1-blur"],
+            ["--stack-depth2-blur", "--p34-depth2-blur"],
             ["--stack-ease",        "--p34-ease"]
           ],
           css:
@@ -12131,6 +12139,7 @@ export function Surface({ open, children }) {
             "  transform: translateY(calc(var(--stack-peek) * -1))\n" +
             "             scale(calc(1 - var(--stack-depth-scale)));\n" +
             "  opacity: calc(1 - var(--stack-depth-fade));\n" +
+            "  filter: blur(var(--stack-depth1-blur));\n" +
             "}\n" +
             ".t-stack-banner[data-depth=\"2\"] {\n" +
             "  z-index: 1;\n" +
@@ -12138,12 +12147,13 @@ export function Surface({ open, children }) {
             "  transform: translateY(calc(var(--stack-peek) * -2))\n" +
             "             scale(calc(1 - var(--stack-depth-scale) * 2));\n" +
             "  opacity: calc(1 - var(--stack-depth-fade) * 1.6);\n" +
+            "  filter: blur(var(--stack-depth2-blur));\n" +
             "}\n" +
             "/* Spread: newest stays put, older ones climb one banner height\n" +
             "   each (100% = the banner's own height). Driven by a class, not\n" +
             "   :hover — the gaps between spread banners belong to no element. */\n" +
             ".t-stack.is-spread .t-stack-banner[data-depth=\"1\"],\n" +
-            ".t-stack.is-spread .t-stack-banner[data-depth=\"2\"] { opacity: 1; }\n" +
+            ".t-stack.is-spread .t-stack-banner[data-depth=\"2\"] { opacity: 1; filter: blur(0); }\n" +
             ".t-stack.is-spread .t-stack-banner[data-depth=\"1\"] {\n" +
             "  transform: translateY(calc((100% + var(--stack-spread-gap)) * -1)) scale(1);\n" +
             "}\n" +
