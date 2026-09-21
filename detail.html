@@ -9739,6 +9739,321 @@ export function Toggle() {
 </script>
 
   <!-- ─── Motion-token React templates ─────────────────────────── -->
+  <script type="text/plain" data-react-key="p28">import { useEffect, useLayoutEffect, useRef, useState } from "react";
+
+// Pair with the CSS from the CSS tab. Two absolutely positioned copies swap
+// over a box the hidden sizer holds steady: the outgoing line exits up
+// through a small blur while the incoming one rises in from below, so a
+// swap costs one --think-swap, not two.
+const DEFAULT_STATES = ["Setting up a workplace", "Running a command", "Browsing files"];
+
+const ms = (name, fallback) => {
+  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  return Number.isFinite(v) ? v : fallback;
+};
+
+export function ThinkingStates({ states = DEFAULT_STATES }) {
+  const [current, setCurrent] = useState(0);
+  const [leaving, setLeaving] = useState(null); // index of the exiting line
+  const [entering, setEntering] = useState(false);
+  const liveRef = useRef(null);
+
+  // Hold, then swap to the next state.
+  useEffect(() => {
+    const hold = setTimeout(() => {
+      setLeaving(current);
+      setCurrent((i) => (i + 1) % states.length);
+      setEntering(true);
+    }, ms("--think-hold", 2000));
+    return () => clearTimeout(hold);
+  }, [current, states.length]);
+
+  // Flush the enter-start rest pose before paint, release it after
+  // --think-gap, and drop the outgoing copy once its swap has played.
+  useLayoutEffect(() => {
+    if (!entering) return;
+    if (liveRef.current) void liveRef.current.offsetWidth;
+    const gap = ms("--think-gap", 50);
+    const swap = ms("--think-swap", 150);
+    const release = setTimeout(() => setEntering(false), gap);
+    const done = setTimeout(() => setLeaving(null), swap + gap);
+    return () => { clearTimeout(release); clearTimeout(done); };
+  }, [entering]);
+
+  // The sizer holds the longest state so the box never resizes mid-swap.
+  const longest = states.reduce((a, b) => (b.length > a.length ? b : a), "");
+
+  return (
+    <span className="t-think" role="status">
+      <span className="t-think-sizer" aria-hidden="true">{longest}</span>
+      {leaving !== null && (
+        <span className="t-think-text is-exit" data-text={states[leaving]} aria-hidden="true">
+          {states[leaving]}
+        </span>
+      )}
+      <span
+        key={current}
+        ref={liveRef}
+        className={"t-think-text" + (entering ? " is-enter-start" : "")}
+        data-text={states[current]}
+      >
+        {states[current]}
+      </span>
+    </span>
+  );
+}
+</script>
+
+  <script type="text/plain" data-react-key="p29">import { useEffect, useRef } from "react";
+
+// Pair with the CSS from the CSS tab. The transcript is rendered twice so the
+// loop wraps without a visible jump; the scroll steps up --reason-lines
+// lines every --reason-hold. Give .t-reason a height (it clips the copies).
+const num = (name, fallback) => {
+  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  return Number.isFinite(v) ? v : fallback;
+};
+
+export function ReasoningStream({ children, className = "" }) {
+  const scrollRef = useRef(null);
+  const textRef = useRef(null);
+
+  useEffect(() => {
+    const scroll = scrollRef.current;
+    const text = textRef.current;
+    if (!scroll || !text) return;
+    let offset = 0;
+    let timer;
+
+    const step = () => {
+      timer = setTimeout(() => {
+        const lineH = parseFloat(getComputedStyle(text).lineHeight) || 18;
+        const stepPx = lineH * num("--reason-lines", 2);
+        const dur = num("--reason-step", 500);
+        const ease =
+          getComputedStyle(document.documentElement).getPropertyValue("--reason-ease").trim() ||
+          "ease-out";
+        offset += stepPx;
+        scroll.style.transition = "transform " + dur + "ms " + ease;
+        scroll.style.transform = "translateY(" + -offset + "px)";
+        timer = setTimeout(() => {
+          // Wrap by one copy's height; the clone underneath hides the jump.
+          const copyH = text.offsetHeight;
+          if (offset >= copyH) {
+            offset -= copyH;
+            scroll.style.transition = "none";
+            scroll.style.transform = "translateY(" + -offset + "px)";
+            void scroll.offsetWidth; // flush before the next tween
+          }
+          step();
+        }, dur + 30);
+      }, num("--reason-hold", 840));
+    };
+
+    step();
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <div className={"t-reason" + (className ? " " + className : "")}>
+      <div className="t-reason-viewport">
+        <div className="t-reason-scroll" ref={scrollRef}>
+          <div className="t-reason-text" ref={textRef}>{children}</div>
+          <div className="t-reason-text" aria-hidden="true">{children}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+</script>
+
+  <script type="text/plain" data-react-key="p30">import { useEffect, useRef } from "react";
+
+// Pair with the CSS from the CSS tab. Each word is a span that rests
+// visible; a replay wipes them all with no transition, flushes one reflow,
+// then resolves them in order through opacity plus a small blur, one
+// every --stream-gap. Bump `replayKey` to stream the text again.
+export function StreamingText({ text, replayKey = 0, autoplay = true }) {
+  const words = text.trim().split(/\s+/);
+  const spansRef = useRef([]);
+  const timer = useRef(null);
+
+  useEffect(() => {
+    if (!autoplay && replayKey === 0) return;
+    const spans = spansRef.current.filter(Boolean);
+    if (!spans.length) return;
+    clearTimeout(timer.current);
+
+    // Snap back to nothing without animating the wipe itself.
+    spans.forEach((s) => {
+      s.style.transition = "none";
+      s.classList.remove("is-in");
+    });
+    void spans[0].offsetWidth; // flush the wipe in the same task
+    spans.forEach((s) => { s.style.transition = ""; });
+
+    const gap =
+      parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--stream-gap")) || 60;
+    const next = (n) => {
+      if (n >= spans.length) return;
+      spans[n].classList.add("is-in");
+      timer.current = setTimeout(() => next(n + 1), gap);
+    };
+    next(0);
+    return () => clearTimeout(timer.current);
+  }, [text, replayKey, autoplay]);
+
+  return (
+    <div className="t-stream">
+      {words.map((w, i) => (
+        <span
+          key={i}
+          ref={(el) => { spansRef.current[i] = el; }}
+          className="t-stream-w is-in"
+        >
+          {w}
+          {i < words.length - 1 ? " " : ""}
+        </span>
+      ))}
+    </div>
+  );
+}
+</script>
+
+  <script type="text/plain" data-react-key="p33">// Pair with the CSS from the CSS tab. Sixteen 2px dots share one
+// colour-pulse keyframe; the variant is just a per-dot delay table into
+// that cycle. `cycle` must match --matrix-cycle (1200ms by default).
+const CORNERS = [0, 3, 12, 15];
+// Clockwise perimeter (corner-less ring), then centre cells.
+const RING = [1, 2, 7, 11, 14, 13, 8, 4];
+const INNER = [5, 6, 9, 10];
+const TWINKLE = [7, 2, 11, 5, 14, 9, 0, 12, 3, 15, 6, 10, 13, 1, 8, 4];
+
+function delayFor(variant, idx, cycle) {
+  const col = idx % 4;
+  if (variant === "scan") return Math.round(col * (cycle / 10));
+  if (variant === "twinkle") return Math.round(TWINKLE[idx] * (cycle / 16));
+  if (variant === "orbit") {
+    const k = RING.indexOf(idx);
+    return k === -1 ? null : Math.round(k * (cycle / 8)); // null: centre holds steady
+  }
+  if (variant === "pulse") return Math.round((INNER.includes(idx) ? 0 : 1) * (cycle * 0.16));
+  return 0;
+}
+
+export function MatrixLoader({ variant = "scan", rounded = false, cycle = 1200, label = "Loading" }) {
+  return (
+    <div className="t-matrix" data-variant={variant} role="status" aria-label={label}>
+      {Array.from({ length: 16 }, (_, idx) => {
+        if (rounded && CORNERS.includes(idx)) return <i key={idx} className="is-gap" />;
+        const d = delayFor(variant, idx, cycle);
+        return <i key={idx} style={d === null ? { animation: "none" } : { "--d": d }} />;
+      })}
+    </div>
+  );
+}
+</script>
+
+  <script type="text/plain" data-react-key="p34">import { useLayoutEffect, useRef, useState } from "react";
+
+// Pair with the CSS from the CSS tab. Sonner-style stacking: a new banner
+// enters at depth 0 while everything already stacked steps one depth back;
+// a fourth arrival sends the oldest out. Hover spread is geometry on the
+// wrapper, not :hover, because the gaps between spread banners belong to
+// no element.
+//
+// Usage: keep the queue in the parent and push { id, node } entries.
+//   const [banners, setBanners] = useState([]);
+//   setBanners((b) => [...b, { id: Date.now(), node: <YourBanner /> }]);
+//   <BannerStack banners={banners} />
+const ms = (name, fallback) => {
+  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  return Number.isFinite(v) ? v : fallback;
+};
+
+export function BannerStack({ banners, className = "" }) {
+  const [items, setItems] = useState([]); // newest first
+  const [spread, setSpread] = useState(false);
+  const stackRef = useRef(null);
+  const seen = useRef(new Set());
+
+  // Adopt the newest banner: depth 0 with the pre-open pose, older ones
+  // step back, anything past depth 2 starts leaving.
+  useLayoutEffect(() => {
+    const latest = banners[banners.length - 1];
+    if (!latest || seen.current.has(latest.id)) return;
+    seen.current.add(latest.id);
+    setItems((prev) => [
+      { ...latest, depth: 0, enter: true, leaving: false },
+      ...prev.map((b, i) =>
+        i + 1 > 2 ? { ...b, leaving: true } : { ...b, depth: i + 1 }
+      ),
+    ]);
+  }, [banners]);
+
+  // Flush the pre-open rest state before paint, then release it in the
+  // same task; drop banners that have left after --stack-close.
+  useLayoutEffect(() => {
+    const entering = items.find((b) => b.enter);
+    if (entering && stackRef.current) {
+      const el = stackRef.current.querySelector('[data-id="' + entering.id + '"]');
+      if (el) void el.offsetWidth;
+      setItems((prev) => prev.map((b) => (b.enter ? { ...b, enter: false } : b)));
+    }
+    if (items.some((b) => b.leaving)) {
+      const t = setTimeout(
+        () => setItems((prev) => prev.filter((b) => !b.leaving)),
+        ms("--stack-close", 250) + 60
+      );
+      return () => clearTimeout(t);
+    }
+  }, [items]);
+
+  const within = (e, above) => {
+    const r = stackRef.current.getBoundingClientRect();
+    return (
+      e.clientX >= r.left && e.clientX <= r.right &&
+      e.clientY <= r.bottom && e.clientY >= r.top - above
+    );
+  };
+  const onPointerMove = (e) => {
+    const stack = stackRef.current;
+    if (!stack) return;
+    const spreadHeight = (stack.offsetHeight + ms("--stack-spread-gap", 8)) * 2;
+    if (spread) {
+      if (!within(e, spreadHeight)) setSpread(false);
+    } else if (within(e, 0)) {
+      setSpread(true);
+    }
+  };
+
+  return (
+    <div
+      className={"t-stack-stage" + (className ? " " + className : "")}
+      onPointerMove={onPointerMove}
+      onPointerLeave={() => setSpread(false)}
+    >
+      <div ref={stackRef} className={"t-stack" + (spread ? " is-spread" : "")}>
+        {items.map((b) => (
+          <div
+            key={b.id}
+            data-id={b.id}
+            data-depth={b.depth}
+            className={
+              "t-stack-banner" +
+              (b.enter ? " is-enter" : "") +
+              (b.leaving ? " is-leaving" : "")
+            }
+          >
+            {b.node}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+</script>
+
   <script type="text/plain" data-react-key="tok-duration">// Motion token — Duration
 // A small, consistent time scale shared across components (ms).
 export const duration = {
