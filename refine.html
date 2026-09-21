@@ -3884,11 +3884,19 @@
     html[data-theme="dark"] .t-acc-panel-inner code {
       background: rgba(255, 255, 255, 0.06);
     }
-    .t-acc-panel-inner a {
-      color: var(--text);
+    .t-acc-panel-inner a,
+    .skill-section-note a {
+      color: inherit;
+      display: inline-block;
       text-decoration: underline;
-      text-underline-offset: 2px;
+      text-decoration-thickness: from-font;
+      text-underline-position: from-font;
+      text-decoration-skip-ink: auto;
+      text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
+      transition: none;
     }
+    .t-acc-panel-inner a:hover,
+    .skill-section-note a:hover { text-decoration-color: currentColor; }
 
     @media (prefers-reduced-motion: reduce) {
       .t-acc-panel, .t-acc-panel-inner, .t-acc-chevron {

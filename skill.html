@@ -3472,6 +3472,20 @@
       color: var(--text-muted);
       margin: 0;
     }
+    /* Inline prose links — jakubantalik.com .inline-link style. */
+    .skill-section-note a,
+    .t-acc-panel-inner a {
+      color: inherit;
+      display: inline-block;
+      text-decoration: underline;
+      text-decoration-thickness: from-font;
+      text-underline-position: from-font;
+      text-decoration-skip-ink: auto;
+      text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
+      transition: none;
+    }
+    .skill-section-note a:hover,
+    .t-acc-panel-inner a:hover { text-decoration-color: currentColor; }
     /* Inline code chip inside notes — used to highlight the literal
        verb when it shows up inside running prose (e.g. the
        `transitions apply menu-dropdown` example under Commands).

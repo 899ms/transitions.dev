@@ -1404,10 +1404,16 @@
     }
     /* Slightly darker than the body copy — points at the Skill page. */
     .subtitle-skill {
-      color: var(--text);
-      text-decoration: none;
+      color: inherit;
+      display: inline-block;
+      text-decoration: underline;
+      text-decoration-thickness: from-font;
+      text-underline-position: from-font;
+      text-decoration-skip-ink: auto;
+      text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
+      transition: none;
     }
-    .subtitle-skill:hover { text-decoration: underline; text-underline-offset: 2px; }
+    .subtitle-skill:hover { text-decoration-color: currentColor; }
 
     /* Hero CTA row (same component as /refine + /skill). Primary pill is
        dark in light theme and light in dark theme; secondary keeps a
@@ -5809,12 +5815,136 @@
        so the two surfaces stay identical. */
     .detail-tabs.proto-modal-tabs { align-self: flex-start; margin-bottom: 0; }
 
+    /* Tabs row with the Copy prompt pill on the right (libraries.dev
+       detail-page component, restyled to this site's flat chips). */
+    .detail-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .detail-prompt {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 36px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 50px;
+      /* Fill + shadow copied from the home page category tabs (.cards-filter). */
+      background: #fff;
+      box-shadow:
+        0 1px 3px 0 rgba(0, 0, 0, 0.04),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.08),
+        inset 0 0 0 1px rgba(196, 196, 196, 0.1),
+        inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      line-height: 14px;
+      white-space: nowrap;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      transition: background 140ms;
+    }
+    .detail-prompt:hover { background: #f7f7f7; }
+    .detail-prompt:active { background: #f1f1f1; }
+    html[data-theme="dark"] .detail-prompt {
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow:
+        0 1px 1px 0 rgba(0, 0, 0, 0.24),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+    }
+    html[data-theme="dark"] .detail-prompt:hover { background: rgba(255, 255, 255, 0.08); }
+    html[data-theme="dark"] .detail-prompt:active { background: rgba(255, 255, 255, 0.14); }
+    .detail-prompt:focus-visible { outline: 2px solid var(--text-muted); outline-offset: 2px; }
+    .detail-prompt-label { display: inline-block; }
+    /* Locked on Pro transitions for non-Pro viewers: muted, no copy,
+       tooltip on hover (same pill as the card copy tooltip). */
+    .detail-prompt { position: relative; }
+    .detail-prompt[aria-disabled="true"] { cursor: default; color: var(--text-faint); }
+    .detail-prompt[aria-disabled="true"]:hover,
+    .detail-prompt[aria-disabled="true"]:active { background: #fff; }
+    html[data-theme="dark"] .detail-prompt[aria-disabled="true"]:hover,
+    html[data-theme="dark"] .detail-prompt[aria-disabled="true"]:active { background: rgba(255, 255, 255, 0.04); }
+    .detail-prompt-tip {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: calc(100% + 8px);
+      box-sizing: border-box;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      padding: 0 12px;
+      border-radius: 40px;
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 16px;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 10;
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity 150ms cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0s linear 150ms;
+      background: #ffffff;
+      color: #17181c;
+      box-shadow:
+        0 2px 8px 0 rgba(0, 0, 0, 0.04),
+        0 0 0 1px rgba(0, 0, 0, 0.06),
+        0 1px 1px 0 rgba(0, 0, 0, 0.04);
+    }
+    html[data-theme="dark"] .detail-prompt-tip {
+      background: #181818;
+      color: #e3e3e3;
+      box-shadow: 0 1px 16px 0 rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+    .detail-prompt[aria-disabled="true"]:hover .detail-prompt-tip,
+    .detail-prompt[aria-disabled="true"]:focus-visible .detail-prompt-tip {
+      opacity: 1;
+      visibility: visible;
+      transition: opacity 150ms cubic-bezier(0.22, 1, 0.36, 1), visibility 0s;
+    }
+    .detail-prompt-ico {
+      position: relative;
+      flex: none;
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+    }
+    .detail-prompt-ico svg {
+      position: absolute;
+      inset: 0;
+      width: 16px;
+      height: 16px;
+      display: block;
+      transform-origin: center;
+      will-change: opacity, transform, filter;
+      transition:
+        opacity 300ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+        filter 300ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .detail-prompt-ico .icon-copy { opacity: 1; transform: scale(1); filter: blur(0); }
+    .detail-prompt-ico .icon-check { opacity: 0; transform: scale(0.25); filter: blur(4px); }
+    .detail-prompt[data-copied="true"] .icon-copy { opacity: 0; transform: scale(0.25); filter: blur(4px); }
+    .detail-prompt[data-copied="true"] .icon-check { opacity: 1; transform: scale(1); filter: blur(0); }
+    @media (prefers-reduced-motion: reduce) {
+      .detail-prompt-ico svg { transition: none; }
+    }
+
     .detail-body { margin-top: 24px; }
     /* Positioning context for the copy button, which lives here (a sibling
        of the overflow:hidden .detail-code) so its tooltip isn't clipped.
        Capped to the code card's / stage's own width so the button anchors
        to the card's right edge, not the wider content column. */
-    .detail-panel { position: relative; max-width: 686px; }
+    .detail-panel { position: relative; }
     .detail-panel[hidden] { display: none; }
 
     /* ── Preview panel ───────────────────────────────────────────
@@ -5826,7 +5956,6 @@
       align-items: center;
       justify-content: center;
       width: 100%;
-      max-width: 686px;
       min-height: 460px;
       border-radius: 24px;
       background: var(--stage-bg);
@@ -5967,16 +6096,16 @@
        / .skill-steps / .feature-list), so this page reads as the same
        "product docs" voice as /refine and /skill instead of inventing
        its own article style. */
-    .detail-doc { max-width: 686px; margin-top: 14px; }
+    .detail-doc { max-width: 686px; margin-top: 24px; }
     .detail-doc[hidden] { display: none; }
     .doc-article[hidden] { display: none; }
 
     .skill-content { width: 100%; display: flex; flex-direction: column; gap: 32px; }
     .skill-section { display: flex; flex-direction: column; gap: 12px; }
     .skill-section-title {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 500;
-      line-height: 22px;
+      line-height: 24px;
       color: var(--text);
       margin: 0;
     }
@@ -5990,12 +6119,13 @@
       font-family: var(--font-mono);
       font-size: 12px;
       line-height: 18px;
-      padding: 1px 6px;
+      padding: 1px 4px;
       border-radius: 6px;
       background: rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.08);
       color: var(--text);
     }
-    html[data-theme="dark"] .skill-section-note code { background: rgba(255, 255, 255, 0.06); }
+    html[data-theme="dark"] .skill-section-note code { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.12); }
 
     .skill-steps {
       margin: 0;
@@ -6013,12 +6143,13 @@
       font-family: var(--font-mono);
       font-size: 12px;
       line-height: 18px;
-      padding: 1px 6px;
+      padding: 1px 4px;
       border-radius: 6px;
       background: rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.08);
       color: var(--text);
     }
-    html[data-theme="dark"] .skill-steps code { background: rgba(255, 255, 255, 0.06); }
+    html[data-theme="dark"] .skill-steps code { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.12); }
 
     .feature-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 24px; }
     .feature-list li { font-size: 13px; line-height: 22px; color: var(--text-muted); }
@@ -6030,17 +6161,18 @@
       font-family: var(--font-mono);
       font-size: 12px;
       line-height: 18px;
-      padding: 1px 6px;
+      padding: 1px 4px;
       border-radius: 6px;
       background: rgba(0, 0, 0, 0.04);
+      border: 1px solid rgba(0, 0, 0, 0.08);
       color: var(--text);
     }
-    html[data-theme="dark"] .feature-desc code { background: rgba(255, 255, 255, 0.06); }
+    html[data-theme="dark"] .feature-desc code { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.12); }
 
     /* Real, copyable install commands (Skill / Refine tool) — same
        row component as /skill and /refine's Get Started section. */
     .skill-command { display: flex; flex-direction: column; gap: 6px; }
-    .skill-command-label { margin-top: 16px; font-size: 12px; font-weight: 500; color: var(--text-muted); }
+    .skill-command-label { margin-top: 16px; font-size: 14px; font-weight: 500; color: var(--text); }
     .skill-code-row {
       position: relative;
       display: flex;
@@ -6091,23 +6223,39 @@
     html[data-theme="dark"] .skill-code-copy:hover { background: rgba(255, 255, 255, 0.06); }
     .skill-code-copy svg { width: 15px; height: 15px; }
 
-    /* Inline links inside doc copy — same treatment as the hero's
-       "skill" link (.subtitle-skill): text color, no blue, underline
-       only on hover. */
+    /* Inline links inside doc copy — jakubantalik.com .inline-link style:
+       native from-font underline at 30% opacity, 100% on hover, no animation. */
     .doc-article a {
-      color: var(--text);
-      text-decoration: none;
+      color: inherit;
+      display: inline-block;
+      text-decoration: underline;
+      text-decoration-thickness: from-font;
+      text-underline-position: from-font;
+      text-decoration-skip-ink: auto;
+      text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
+      transition: none;
     }
-    .doc-article a:hover { text-decoration: underline; text-underline-offset: 2px; }
+    .doc-article a:hover { text-decoration-color: currentColor; }
 
-    /* Higher-contrast body copy on the docs pages (Introduction /
-       Installation / Accessibility) — near-black in light mode, a light
-       grey in dark mode so it doesn't disappear. */
+    /* Docs body copy (Introduction / Installation / Accessibility):
+       Inter 14px #3f3f3f in light mode, light grey in dark mode. */
     .doc-article .skill-section-note,
     .doc-article .skill-steps,
     .doc-article .feature-list li,
     .doc-article .feature-name,
-    .doc-article .feature-desc { color: #0d0d0d; }
+    .doc-article .feature-desc {
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 22px;
+      color: #3f3f3f;
+    }
+    /* Subtitle under the doc title reads as body copy, not display type. */
+    .docs-main.is-doc .detail-sub {
+      font-size: 14px;
+      line-height: 22px;
+      color: #3f3f3f;
+    }
+    html[data-theme="dark"] .docs-main.is-doc .detail-sub { color: #ededed; }
     html[data-theme="dark"] .doc-article .skill-section-note,
     html[data-theme="dark"] .doc-article .skill-steps,
     html[data-theme="dark"] .doc-article .feature-list li,
@@ -6115,7 +6263,7 @@
     html[data-theme="dark"] .doc-article .feature-desc { color: #ededed; }
 
     /* Doc mode hides the transition-only controls. */
-    .docs-main.is-doc .detail-tabs,
+    .docs-main.is-doc .detail-head-row,
     .docs-main.is-doc .detail-body,
     .docs-main.is-doc .detail-topbar { display: none; }
 
@@ -6123,7 +6271,6 @@
     .detail-code {
       position: relative;
       width: 100%;
-      max-width: 686px;
       border-radius: 24px;
       background: var(--card-bg);
       box-shadow: var(--card-shadow), inset 0 0 0 1px var(--card-border);
@@ -6570,11 +6717,23 @@
             <h1 class="detail-title" id="detail-title">Card resize</h1>
             <p class="detail-sub" id="detail-sub">Smooth card resize transition</p>
           </div>
-          <div class="detail-tabs proto-modal-tabs" role="tablist" aria-label="View">
-            <span class="proto-modal-tabs-indicator" aria-hidden="true"></span>
-            <button type="button" class="proto-modal-tab" role="tab" data-detail-tab="preview" aria-selected="true">Preview</button>
-            <button type="button" class="proto-modal-tab" role="tab" data-detail-tab="css" aria-selected="false">CSS</button>
-            <button type="button" class="proto-modal-tab" role="tab" data-detail-tab="react" aria-selected="false">React</button>
+          <div class="detail-head-row">
+            <div class="detail-tabs proto-modal-tabs" role="tablist" aria-label="View">
+              <span class="proto-modal-tabs-indicator" aria-hidden="true"></span>
+              <button type="button" class="proto-modal-tab" role="tab" data-detail-tab="preview" aria-selected="true">Preview</button>
+              <button type="button" class="proto-modal-tab" role="tab" data-detail-tab="css" aria-selected="false">CSS</button>
+              <button type="button" class="proto-modal-tab" role="tab" data-detail-tab="react" aria-selected="false">React</button>
+            </div>
+            <button type="button" class="detail-prompt" data-prompt-target="#agent-prompt" aria-label="Copy agent prompt">
+              <span class="detail-prompt-ico" aria-hidden="true">
+                <svg class="icon-copy" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M5.6 5.6V3.92C5.6 3.24794 5.6 2.91191 5.73079 2.65521C5.84584 2.42942 6.02942 2.24584 6.25521 2.13079C6.51191 2 6.84794 2 7.52 2H12.08C12.7521 2 13.0881 2 13.3448 2.13079C13.5706 2.24584 13.7542 2.42942 13.8692 2.65521C14 2.91191 14 3.24794 14 3.92V8.48C14 9.15206 14 9.4881 13.8692 9.74479C13.7542 9.97058 13.5706 10.1542 13.3448 10.2692C13.0881 10.4 12.7521 10.4 12.08 10.4H10.4M3.92 14H8.48C9.15206 14 9.48809 14 9.74479 13.8692C9.97058 13.7542 10.1542 13.5706 10.2692 13.3448C10.4 13.0881 10.4 12.7521 10.4 12.08V7.52C10.4 6.84794 10.4 6.51191 10.2692 6.25521C10.1542 6.02942 9.97058 5.84584 9.74479 5.73079C9.48809 5.6 9.15206 5.6 8.48 5.6H3.92C3.24794 5.6 2.91191 5.6 2.65521 5.73079C2.42942 5.84584 2.24584 6.02942 2.13079 6.25521C2 6.51191 2 6.84794 2 7.52V12.08C2 12.7521 2 13.0881 2.13079 13.3448C2.24584 13.5706 2.42942 13.7542 2.65521 13.8692C2.91191 14 3.24794 14 3.92 14Z" />
+                </svg>
+                <svg class="icon-check" aria-hidden="true" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.46889L6.26923 11.58L12.5 4.58" /></svg>
+              </span>
+              <span class="detail-prompt-label">Copy prompt</span>
+              <span class="detail-prompt-tip" role="tooltip">Available with Pro plan</span>
+            </button>
           </div>
         </header>
 
@@ -6602,9 +6761,13 @@
           </div>
         </div>
 
+        <!-- Agent prompt source for the Copy prompt button. Filled per
+             selected transition by the detail controller. -->
+        <pre id="agent-prompt" hidden></pre>
+
         <div class="detail-doc" id="detail-doc" hidden>
           <article class="doc-article skill-content" data-doc="introduction"
-                   data-title="Introduction" data-subtitle="A copy-paste library of production-ready UI transitions" hidden>
+                   data-title="Introduction" data-subtitle="A copy-paste library of production-ready UI transitions." hidden>
             <div class="skill-section">
               <p class="skill-section-note">Transitions.dev is a curated collection of the most essential UI transitions for web apps: dropdowns, modals, notification badges, number pop-ins, page slides, accordions and more. Each one is a small, self-contained piece of motion you can drop into any project.</p>
               <p class="skill-section-note">Every transition is built with plain CSS (plus a little JavaScript only where a demo needs it) and tuned against a shared scale of motion tokens (duration, easing, distance, blur and scale), so they feel consistent no matter where you use them.</p>
@@ -6613,7 +6776,7 @@
           </article>
 
           <article class="doc-article skill-content" data-doc="installation"
-                   data-title="Installation" data-subtitle="Four ways to get transitions into your project" hidden>
+                   data-title="Installation" data-subtitle="Four ways to get transitions into your project." hidden>
             <div class="skill-section">
               <h2 class="skill-section-title">Copy the snippet</h2>
               <p class="skill-section-note">There's nothing to install: open a transition, copy the CSS (or React) from the code panel, and paste it into your project; snippets are namespaced (<code>.t-*</code>) with their motion tokens exposed as CSS variables you can tweak directly.</p>
@@ -6645,8 +6808,8 @@
               </div>
             </div>
             <div class="skill-section">
-              <h2 class="skill-section-title">Install with the Skill &amp; Refine tool</h2>
-              <p class="skill-section-note">Prefer not to copy by hand? Two tools deliver transitions straight into your codebase.</p>
+              <h2 class="skill-section-title">Install with the Skill</h2>
+              <p class="skill-section-note">Prefer not to copy by hand? Your AI agent can drop transitions straight into your codebase.</p>
               <div class="skill-command">
                 <span class="skill-command-label">Free version</span>
                 <div class="skill-code-row">
@@ -6669,6 +6832,9 @@
                 </div>
                 <p class="skill-section-note"><a href="pro.html">Pro Skill</a>: installs the premium transitions as an agent skill (CSS, React, TypeScript). Opens your browser once to confirm your Pro account, then drops it into your skills directory. See <a href="pro.html">Transitions Pro</a>.</p>
               </div>
+            </div>
+            <div class="skill-section">
+              <h2 class="skill-section-title">Refine tool</h2>
               <div class="skill-command">
                 <span class="skill-command-label">Free &amp; Pro version</span>
                 <div class="skill-code-row">
@@ -6684,7 +6850,7 @@
           </article>
 
           <article class="doc-article skill-content" data-doc="accessibility"
-                   data-title="Accessibility" data-subtitle="Motion that respects the people using it" hidden>
+                   data-title="Accessibility" data-subtitle="Motion that respects the people using it." hidden>
             <div class="skill-section">
               <p class="skill-section-note">Motion should never get in the way. Every transition here stays accessible by default.</p>
               <ul class="feature-list">
@@ -13165,9 +13331,71 @@ export function Surface({ open, children }) {
               else history.replaceState({ slug: it.slug }, "", url);
             } catch (e) {}
 
+            updateAgentPrompt(it);
+
             // Tabs are visible again in transition mode; re-sync the pill.
             positionIndicator(false);
           }
+
+          // Copy prompt: one paste hands the selected transition to a
+          // coding agent (same component as the libraries.dev detail pages).
+          var agentPromptEl = document.getElementById("agent-prompt");
+          function updateAgentPrompt(it) {
+            if (!agentPromptEl) return;
+            var lines = [
+              'Add the "' + it.title + '" transition from transitions.dev to my project.',
+              "",
+              "Install the skill (recommended):",
+              "npx skills add Jakubantalik/transitions.dev",
+              'Then ask your agent for "' + it.title + '" and it applies the snippet with the right motion tokens.',
+              "",
+              "Or pull it with the CLI:",
+              it.pro
+                ? "npx transitions-dev add --pro   (Pro transition, sign-in opens in the browser)"
+                : "npx transitions-dev add " + it.slug,
+              "",
+              "The transition ships as namespaced CSS (.t-*) with its motion tokens",
+              "(duration, easing, distance, blur, scale) exposed as CSS variables;",
+              "a React variant is available too.",
+              "Docs: https://transitions.dev/detail.html?t=" + it.slug
+            ];
+            agentPromptEl.textContent = lines.join("\n");
+            // Pro transitions: locked unless the viewer is entitled.
+            var entitled = !!(window.TransitionsPro && window.TransitionsPro.state &&
+                              window.TransitionsPro.state.pro);
+            var locked = !!it.pro && !entitled;
+            Array.prototype.forEach.call(
+              document.querySelectorAll("[data-prompt-target]"),
+              function (btn) {
+                if (locked) btn.setAttribute("aria-disabled", "true");
+                else btn.removeAttribute("aria-disabled");
+              }
+            );
+          }
+          // Unlock once auth resolves (pro-client.js dispatches pro:me).
+          document.addEventListener("pro:me", function () {
+            if (currentIndex >= 0) updateAgentPrompt(items[currentIndex]);
+          });
+          Array.prototype.forEach.call(
+            document.querySelectorAll("[data-prompt-target]"),
+            function (btn) {
+              var timer = null;
+              btn.addEventListener("click", function () {
+                if (btn.getAttribute("aria-disabled") === "true") return;
+                var src = document.querySelector(btn.getAttribute("data-prompt-target"));
+                var text = src ? (src.textContent || "").trim() : "";
+                if (!text) return;
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                  navigator.clipboard.writeText(text).catch(function () {});
+                }
+                btn.setAttribute("data-copied", "true");
+                window.clearTimeout(timer);
+                timer = window.setTimeout(function () {
+                  btn.removeAttribute("data-copied");
+                }, 1600);
+              });
+            }
+          );
 
           function selectSlug(slug, push) {
             var i = indexForSlug(slug);
